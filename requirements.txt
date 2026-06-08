@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+scikit-learn
+pandas
+joblib
+wandb
+prometheus-client
+huggingface_hub
