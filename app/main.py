@@ -12,7 +12,7 @@ prediction_requests = Counter(
 
 app = FastAPI()
 
-model = joblib.load("model.pkl")
+model = joblib.load("app/model.pkl")
 
 @app.post("/predict")
 def predict(data: dict):
