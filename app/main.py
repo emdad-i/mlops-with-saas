@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 import joblib
 
 from prometheus_client import make_asgi_app
