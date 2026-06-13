@@ -1,16 +1,20 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
+import time
 
 from prometheus_client import make_asgi_app
 from prometheus_client import Counter
+from prometheus_client import Histogram
 
 prediction_requests = Counter(
     "prediction_requests_total",
     "Total prediction requests"
 )
-
-
+prediction_latency = Histogram(
+    "prediction_latency_seconds",
+    "Prediction latency"
+)
 
 app = FastAPI()
 
@@ -34,10 +38,9 @@ class WineFeatures(BaseModel):
 
 @app.post("/predict")
 def predict(data: WineFeatures):
-    
-    # Optional: prediction_requests.inc() if you are using Prometheus
-    
-    # 2. Convert the incoming Pydantic data into the 2D array the model expects
+    start = time.time()
+    prediction_requests.inc()
+
     feature_vector = [[
         data.alcohol,
         data.malic_acid,
@@ -53,10 +56,13 @@ def predict(data: WineFeatures):
         data.od280_od315_of_diluted_wines,
         data.proline
     ]]
-    
-    # 3. Make the prediction
+
     prediction = model.predict(feature_vector)
-    
+
+    prediction_latency.observe(
+        time.time() - start
+    )
+
     return {
         "prediction": int(prediction[0])
     }
