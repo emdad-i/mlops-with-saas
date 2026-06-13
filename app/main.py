@@ -16,7 +16,7 @@ prediction_latency = Histogram("prediction_latency_seconds", "Prediction latency
 app = FastAPI()
 
 # Load model safely (mocked here, keep your path)
-# model = joblib.load("app/model.pkl")
+model = joblib.load("app/model.pkl")
 
 class WineFeatures(BaseModel):
     alcohol: float
@@ -45,8 +45,8 @@ def predict(data: WineFeatures):
         data.od280_od315_of_diluted_wines, data.proline
     ]]
 
-    # prediction = model.predict(feature_vector)
-    prediction = [1] # Temporary placeholder
+    prediction = model.predict(feature_vector)
+    # prediction = [1] # Temporary placeholder
 
     prediction_latency.observe(time.time() - start)
 
