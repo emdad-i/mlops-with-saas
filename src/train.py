@@ -1,8 +1,10 @@
+import os
 import joblib
 from sklearn.datasets import load_wine
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
+from huggingface_hub import HfApi
 import wandb
 
 # 1. Initialize wandb
@@ -47,9 +49,34 @@ wandb.log(
 
 print(f"Model trained successfully. Test Accuracy: {accuracy:.4f}")
 
-# 5. Save the trained model artifact
-joblib.dump(model, "app/model.pkl")
-print("Model saved to app/model.pkl")
+# 5. Save the trained model artifact locally
+model_path = os.path.join("app", "model.pkl")
+joblib.dump(model, model_path)
+print(f"Model saved to {model_path}")
+
+# 6. Upload the trained model artifact to Hugging Face Hub
+hf_repo_id = os.environ.get("HUGGINGFACE_REPO_ID")
+hf_token = os.environ.get("HUGGINGFACE_HUB_TOKEN")
+
+if hf_repo_id:
+    api = HfApi()
+    try:
+        api.upload_file(
+            path_or_fileobj=model_path,
+            path_in_repo="model.pkl",
+            repo_id=hf_repo_id,
+            repo_type="model",
+            token=hf_token,
+        )
+        print(f"Model uploaded to Hugging Face repo: {hf_repo_id}/model.pkl")
+    except Exception as exc:
+        print("Failed to upload model to Hugging Face:", exc)
+        raise
+else:
+    print(
+        "Skipping Hugging Face upload because HUGGINGFACE_REPO_ID is not set. "
+        "Set the environment variable to enable upload."
+    )
 
 # Close the wandb run
 wandb.finish()

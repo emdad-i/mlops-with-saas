@@ -6,3 +6,4 @@ joblib
 wandb
 prometheus-client
 huggingface_hub
+dvc

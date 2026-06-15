@@ -4,6 +4,7 @@ import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
+from huggingface_hub import hf_hub_download
 
 from prometheus_client import make_asgi_app, Counter, Histogram
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -15,8 +16,24 @@ prediction_latency = Histogram("prediction_latency_seconds", "Prediction latency
 
 app = FastAPI()
 
-# Load model safely (mocked here, keep your path)
-model = joblib.load("app/model.pkl")
+# Load model safely, downloading from Hugging Face Hub if needed.
+MODEL_LOCAL_PATH = "app/model.pkl"
+HUGGINGFACE_REPO_ID = os.environ.get("HUGGINGFACE_REPO_ID")
+
+if os.path.exists(MODEL_LOCAL_PATH):
+    model = joblib.load(MODEL_LOCAL_PATH)
+elif HUGGINGFACE_REPO_ID:
+    model_file = hf_hub_download(
+        repo_id=HUGGINGFACE_REPO_ID,
+        filename="model.pkl",
+        repo_type="model",
+    )
+    model = joblib.load(model_file)
+else:
+    raise RuntimeError(
+        "Model file not found at app/model.pkl and HUGGINGFACE_REPO_ID is not configured. "
+        "Set HUGGINGFACE_REPO_ID and optionally HUGGINGFACE_HUB_TOKEN."
+    )
 
 class WineFeatures(BaseModel):
     alcohol: float
