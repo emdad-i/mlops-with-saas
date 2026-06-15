@@ -17,23 +17,28 @@ prediction_latency = Histogram("prediction_latency_seconds", "Prediction latency
 app = FastAPI()
 
 # Load model safely, downloading from Hugging Face Hub if needed.
-MODEL_LOCAL_PATH = "app/model.pkl"
 HUGGINGFACE_REPO_ID = os.environ.get("HUGGINGFACE_REPO_ID")
+HUGGINGFACE_HUB_TOKEN = os.environ.get("HUGGINGFACE_HUB_TOKEN")
 
-if os.path.exists(MODEL_LOCAL_PATH):
-    model = joblib.load(MODEL_LOCAL_PATH)
-elif HUGGINGFACE_REPO_ID:
+if not HUGGINGFACE_REPO_ID:
+    raise RuntimeError(
+        "HUGGINGFACE_REPO_ID is required. Set the environment variable to your model repo id."
+    )
+
+# Always load model from Hugging Face Hub (model registry). Require token for private repos.
+try:
     model_file = hf_hub_download(
         repo_id=HUGGINGFACE_REPO_ID,
         filename="model.pkl",
         repo_type="model",
+        token=HUGGINGFACE_HUB_TOKEN,
     )
     model = joblib.load(model_file)
-else:
+except Exception as exc:
     raise RuntimeError(
-        "Model file not found at app/model.pkl and HUGGINGFACE_REPO_ID is not configured. "
-        "Set HUGGINGFACE_REPO_ID and optionally HUGGINGFACE_HUB_TOKEN."
-    )
+        "Failed to download model from Hugging Face Hub. "
+        "Make sure HUGGINGFACE_REPO_ID is correct and HUGGINGFACE_HUB_TOKEN (if the repo is private) is set."
+    ) from exc
 
 class WineFeatures(BaseModel):
     alcohol: float
